@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>D&D 캐릭터 입력</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="header">
+      <div class="title-row">
+        <h1>📝 D&D 캐릭터 기본 정보 입력</h1>
+        <div class="theme-controls">
+          <button id="themeToggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="테마 전환 (라이트/다크)" title="테마 전환">
+            <span class="icon" aria-hidden="true">🌙</span>
+            <span class="label">다크</span>
+          </button>
+        </div>
+      </div>
+      <p>클래스, 종족, 배경, 성향을 입력해 캐릭터의 기본 정보를 정합니다. 이후 능력치/특성 등은 확장 가능해요.</p>
+    </header>
+
+    <section class="card form-card" aria-labelledby="form-title">
+      <h2 id="form-title" class="sr-only">캐릭터 입력 폼</h2>
+      <form id="char-form" novalidate>
+        <div class="field">
+          <label for="name">캐릭터 이름<span class="req" aria-hidden="true">*</span></label>
+          <input
+            id="name" name="name" type="text" inputmode="text" autocomplete="nickname"
+            placeholder="예: 아렌(Arlen) / 강소율"
+            minlength="1" maxlength="40" required
+            aria-describedby="name-hint name-error" aria-invalid="false"
+          />
+          <p id="name-hint" class="hint">한글/영문, 공백, 하이픈(-), 언더바(_), 작은따옴표('), 마침표(.) 허용. (최대 40자)</p>
+          <p id="name-error" class="error-message" hidden></p>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="cls">클래스(Class)<span class="req" aria-hidden="true">*</span></label>
+            <select id="cls" name="class" required aria-describedby="cls-error" aria-invalid="false">
+              <option value="" selected disabled>— 클래스를 선택 —</option>
+              <option>바바리안</option>
+              <option>바드</option>
+              <option>클레릭</option>
+              <option>드루이드</option>
+              <option>파이터</option>
+              <option>몽크</option>
+              <option>팔라딘</option>
+              <option>레인저</option>
+              <option>로그</option>
+              <option>소서러</option>
+              <option>워락</option>
+              <option>위저드</option>
+              <option>아티피서</option>
+            </select>
+            <p id="cls-error" class="error-message" hidden></p>
+          </div>
+
+          <div class="field">
+            <label for="alignment">성향(Alignment)<span class="req" aria-hidden="true">*</span></label>
+            <select id="alignment" name="alignment" required aria-describedby="alignment-error" aria-invalid="false">
+              <option value="" selected disabled>— 성향을 선택 —</option>
+              <option>질서 선</option>
+              <option>중립 선</option>
+              <option>혼돈 선</option>
+              <option>질서 중립</option>
+              <option>중립</option>
+              <option>혼돈 중립</option>
+              <option>질서 악</option>
+              <option>중립 악</option>
+              <option>혼돈 악</option>
+            </select>
+            <p id="alignment-error" class="error-message" hidden></p>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="species">종족(Species)<span class="req" aria-hidden="true">*</span></label>
+            <select id="species" name="species" required aria-describedby="species-error" aria-invalid="false">
+              <option value="" selected disabled>— 종족을 선택 —</option>
+              <option>인간</option>
+              <option>엘프</option>
+              <option>하프엘프</option>
+              <option>드워프</option>
+              <option>하플링</option>
+              <option>노움</option>
+              <option>하프오크</option>
+              <option>티플링</option>
+              <option>드래곤본</option>
+              <option>아시마르</option>
+            </select>
+            <p id="species-error" class="error-message" hidden></p>
+          </div>
+
+          <div class="field">
+            <label for="background">배경(Background)<span class="req" aria-hidden="true">*</span></label>
+            <select id="background" name="background" required aria-describedby="background-error" aria-invalid="false">
+              <option value="" selected disabled>— 배경을 선택 —</option>
+              <option>수도자(아콜라이트)</option>
+              <option>군인</option>
+              <option>현자</option>
+              <option>범죄자</option>
+              <option>민중 영웅</option>
+              <option>귀족</option>
+              <option>연희가</option>
+              <option>길드 장인</option>
+              <option>은둔자</option>
+              <option>외지인</option>
+              <option>선원</option>
+              <option>거리의 아이</option>
+            </select>
+            <p id="background-error" class="error-message" hidden></p>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" id="btnSave">저장 (미리보기)</button>
+          <button type="button" class="secondary" id="btnReset">초기화</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="preview" class="card preview-card" aria-live="polite" hidden>
+      <div class="preview-header">
+        <h3 class="name" id="pv-name">—</h3>
+        <div class="chips">
+          <span class="tag" id="pv-class" title="클래스">Class: —</span>
+          <span class="tag" id="pv-alignment" title="성향">Alignment: —</span>
+          <span class="tag" id="pv-species" title="종족">Species: —</span>
+          <span class="tag" id="pv-background" title="배경">Background: —</span>
+        </div>
+      </div>
+      <p class="muted" style="margin:12px 0 0;">이 미리보기는 저장 없이 브라우저 메모리에서만 보입니다.</p>
+    </section>
+
+    <footer>
+      <p><strong>팁:</strong> <kbd>Tab</kbd> 으로 항목 이동, <kbd>Shift</kbd>+<kbd>Tab</kbd> 뒤로 이동. 폼 제출은 <kbd>Enter</kbd>.</p>
+    </footer>
+  </div>
+
+  <noscript>
+    이 페이지는 미리보기 및 테마 전환에 JavaScript가 필요합니다. JS가 꺼져 있어도 입력/선택은 가능합니다.
+  </noscript>
+
+  <script src="assets/js/app.js" defer></script>
+</body>
+</html>
