@@ -94,6 +94,10 @@
           <span class="tag" id="pv-background" title="배경">Background: —</span>
         </div>
       </div>
+      <div id="pv-features-wrap" class="features" hidden>
+        <h4 class="subheading">클래스 레벨 1 특성</h4>
+        <ul id="pv-class-features" class="feature-list"></ul>
+      </div>
       <p class="muted" style="margin:12px 0 0;">이 미리보기는 저장 없이 브라우저 메모리에서만 보입니다.</p>
     </section>
 
@@ -106,6 +110,9 @@
     이 페이지는 미리보기 및 테마 전환에 JavaScript가 필요합니다. JS가 꺼져 있어도 입력/선택은 가능합니다.
   </noscript>
 
+  <!-- 옵션 데이터(목록 + 레벨1 특성) 먼저 로드 -->
+  <script src="assets/js/options.ko.global.js" defer></script>
+  <!-- 앱 로직 -->
   <script src="assets/js/app.js" defer></script>
 </body>
 </html>

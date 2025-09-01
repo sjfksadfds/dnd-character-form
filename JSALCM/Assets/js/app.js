@@ -55,6 +55,8 @@ const pvClass = document.getElementById('pv-class');
 const pvSpecies = document.getElementById('pv-species');
 const pvBackground = document.getElementById('pv-background');
 const pvAlignment = document.getElementById('pv-alignment');
+const pvFeatWrap = document.getElementById('pv-features-wrap');
+const pvFeatList = document.getElementById('pv-class-features');
 const btnReset = document.getElementById('btnReset');
 
 // ===== Validation helpers =====
@@ -113,11 +115,13 @@ function populateAllOptions() {
 (function ensureOptionsAndInit(){
   if (window.DND_OPTIONS) {
     populateAllOptions();
+    updatePreview();
+    renderClassFeatures();
   } else {
     const s = document.createElement('script');
     s.src = 'assets/js/options.ko.global.js';
     s.async = false; // 순서 보장
-    s.onload = () => { populateAllOptions(); updatePreview(); };
+    s.onload = () => { populateAllOptions(); updatePreview(); renderClassFeatures(); };
     s.onerror = () => console.warn('[DND] 옵션 스크립트를 불러오지 못했습니다.');
     document.head.appendChild(s);
   }
@@ -133,6 +137,28 @@ function getData() {
     alignment: alignmentEl?.value?.trim() || ''
   };
 }
+function renderClassFeatures() {
+  if (!pvFeatWrap || !pvFeatList) return;
+  pvFeatList.innerHTML = '';
+  const cls = (clsEl?.value || '').trim();
+  const all = window.DND_OPTIONS?.classFeaturesLvl1 || {};
+  const feats = all[cls] || [];
+  if (!cls || feats.length === 0) {
+    pvFeatWrap.hidden = true;
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  feats.forEach(f => {
+    const li = document.createElement('li');
+    li.className = 'feature-item';
+    const t = document.createElement('div'); t.className = 'feat-title'; t.textContent = f.name || '특성';
+    const d = document.createElement('div'); d.className = 'feat-desc'; d.textContent = f.desc || '';
+    li.appendChild(t); li.appendChild(d);
+    frag.appendChild(li);
+  });
+  pvFeatList.appendChild(frag);
+  pvFeatWrap.hidden = false;
+}
 function updatePreview() {
   const data = getData();
   pvName.textContent = data.name || '—';
@@ -144,24 +170,25 @@ function updatePreview() {
   pv.hidden = !anyFilled;
 }
 
-// 입력 즉시 반영
+// 입력 즉시 반영 + 특성 렌더링
 [nameEl, clsEl, speciesEl, backgroundEl, alignmentEl].forEach(el => {
   el?.addEventListener('input', () => {
-    // 즉시 미리보기 갱신
     updatePreview();
-    // 즉시 검증도 수행(선택 사항)
     if (el === nameEl) validateName();
     else if (el === clsEl) validateRequired(clsEl, '클래스');
     else if (el === speciesEl) validateRequired(speciesEl, '종족');
     else if (el === backgroundEl) validateRequired(backgroundEl, '배경');
     else if (el === alignmentEl) validateRequired(alignmentEl, '성향');
   });
-  el?.addEventListener('change', updatePreview);
+  el?.addEventListener('change', () => {
+    updatePreview();
+    if (el === clsEl) renderClassFeatures();
+  });
 });
 
-document.addEventListener('DOMContentLoaded', updatePreview);
+document.addEventListener('DOMContentLoaded', () => { updatePreview(); renderClassFeatures(); });
 
-// ===== Submit/Reset (유지: 저장 버튼 없이도 동작) =====
+// ===== Submit/Reset =====
 form?.addEventListener('submit', (e) => {
   e.preventDefault();
   const ok = (
@@ -172,6 +199,7 @@ form?.addEventListener('submit', (e) => {
     validateRequired(alignmentEl, '성향')
   );
   updatePreview();
+  renderClassFeatures();
   if (!ok) {
     const firstInvalid = [nameEl, clsEl, speciesEl, backgroundEl, alignmentEl].find(el => el.getAttribute('aria-invalid') === 'true');
     if (firstInvalid) firstInvalid.focus();
@@ -184,5 +212,14 @@ btnReset?.addEventListener('click', () => {
   form.reset();
   [nameEl, clsEl, speciesEl, backgroundEl, alignmentEl].forEach(el => setError(el, ''));
   updatePreview();
+  renderClassFeatures();
   nameEl.focus();
 });
+// /* === Features list (preview) === */
+// .subheading { margin: 16px 0 6px; font-weight: 800; font-size: 1.02rem; }
+// .feature-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 12px; }
+// .feature-item { border: 1px solid color-mix(in oklab, var(--text) 15%, transparent); border-radius: 12px; padding: 10px 12px; background: color-mix(in oklab, var(--text) 6%, transparent); }
+// :root[data-theme="dark"] .feature-item { border-color: rgba(255,255,255,.12); background: color-mix(in oklab, var(--text) 8%, transparent); }
+// .feat-title { font-weight: 700; }
+// .feat-desc { color: var(--muted); font-size: .95rem; margin-top: 4px; } 
+
