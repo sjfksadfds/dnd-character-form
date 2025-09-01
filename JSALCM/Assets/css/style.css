@@ -213,3 +213,7 @@ kbd {
 .theme-toggle[aria-pressed="true"] {
   background: color-mix(in oklab, var(--text) 6%, transparent);
 }
+/* === Skills UI === */
+.field.nested { margin-top: 10px; padding-top: 8px; border-top: 1px dashed color-mix(in oklab, var(--text) 18%, transparent); }
+.skill-selects { display: grid; gap: 8px; grid-template-columns: 1fr; }
+@media (min-width: 560px) { .skill-selects { grid-template-columns: 1fr 1fr; } }
