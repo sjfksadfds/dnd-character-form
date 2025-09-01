@@ -8,7 +8,7 @@ function effectiveTheme() {
   if (stored === 'light' || stored === 'dark') return stored;
   return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
-function applyTheme(mode /* 'light' | 'dark' | undefined */) {
+function applyTheme(mode) {
   if (mode === 'light' || mode === 'dark') {
     root.setAttribute('data-theme', mode);
     localStorage.setItem('theme', mode);
@@ -24,7 +24,6 @@ function applyTheme(mode /* 'light' | 'dark' | undefined */) {
   if (label) label.textContent = eff === 'dark' ? '라이트' : '다크';
   if (colorSchemeMeta) colorSchemeMeta.setAttribute('content', eff === 'dark' ? 'dark light' : 'light dark');
 }
-
 if (themeToggle) {
   themeToggle.addEventListener('click', () => {
     const stored = localStorage.getItem('theme');
@@ -59,7 +58,7 @@ const pvFeatWrap = document.getElementById('pv-features-wrap');
 const pvFeatList = document.getElementById('pv-class-features');
 const btnReset = document.getElementById('btnReset');
 
-// ===== Validation helpers =====
+// ===== Validation =====
 const NAME_MAX = 40;
 const rxName = /^(?=.{1,40}$)[A-Za-z0-9\s_\-.'·\u00B7가-힣ㄱ-ㅎㅏ-ㅣ]+$/;
 function setError(el, msg) {
@@ -80,31 +79,50 @@ function validateName() {
   if (!v) { setError(nameEl, '이름을 입력하세요.'); return false; }
   if (v.length > NAME_MAX) { setError(nameEl, `최대 ${NAME_MAX}자까지 입력할 수 있습니다.`); return false; }
   if (!rxName.test(v)) { setError(nameEl, "허용되지 않는 문자가 포함되어 있어요. (한글/영문/숫자/공백/-, _, ', .)"); return false; }
-  setError(nameEl, '');
-  return true;
+  setError(nameEl, ''); return true;
 }
 function validateRequired(el, label) {
   const v = (el.value ?? '').trim();
   if (!v) { setError(el, `${label}을(를) 선택하세요.`); return false; }
-  setError(el, '');
-  return true;
+  setError(el, ''); return true;
 }
 
-// ===== Options population (external list) =====
+// ===== Helpers =====
 function fillSelect(selectEl, items) {
-  if (!selectEl || !Array.isArray(items)) return;
+  if (!selectEl) return;
   const first = selectEl.querySelector('option'); // placeholder 유지
   selectEl.innerHTML = '';
   if (first) selectEl.appendChild(first);
+
   const frag = document.createDocumentFragment();
-  for (const label of items) {
+  for (const item of (items || [])) {
+    if (item == null) continue;
+    let value, label;
+    if (typeof item === 'string') {
+      value = item; label = item;
+    } else if ('value' in item && 'label' in item) {
+      value = item.value; label = item.label;
+    } else if ('code' in item && 'name' in item) {
+      value = item.code; label = item.name;
+    } else {
+      continue;
+    }
     const opt = document.createElement('option');
-    opt.value = label; // 현재는 value=라벨(한국어) 동일
-    opt.textContent = label;
+    opt.value = String(value);
+    opt.textContent = String(label);
     frag.appendChild(opt);
   }
   selectEl.appendChild(frag);
 }
+function selectedLabel(selectEl) {
+  return (selectEl?.selectedOptions?.[0]?.textContent || '').trim();
+}
+function findClassByCode(code) {
+  const arr = window.DND_OPTIONS?.classes || [];
+  return arr.find(c => (c && typeof c === 'object' && c.code === code)) || null;
+}
+
+// ===== Populate options =====
 function populateAllOptions() {
   const d = window.DND_OPTIONS || {};
   fillSelect(clsEl, d.classes);
@@ -112,26 +130,13 @@ function populateAllOptions() {
   fillSelect(backgroundEl, d.backgrounds);
   fillSelect(alignmentEl, d.alignments);
 }
-(function ensureOptionsAndInit(){
-  if (window.DND_OPTIONS) {
-    populateAllOptions();
-    updatePreview();
-    renderClassFeatures();
-  } else {
-    const s = document.createElement('script');
-    s.src = 'assets/js/options.ko.global.js';
-    s.async = false; // 순서 보장
-    s.onload = () => { populateAllOptions(); updatePreview(); renderClassFeatures(); };
-    s.onerror = () => console.warn('[DND] 옵션 스크립트를 불러오지 못했습니다.');
-    document.head.appendChild(s);
-  }
-})();
 
-// ===== Live preview =====
+// ===== Live preview & features =====
 function getData() {
   return {
     name: nameEl?.value?.trim() || '',
-    class: clsEl?.value?.trim() || '',
+    classCode: clsEl?.value?.trim() || '',
+    className: selectedLabel(clsEl) || '',
     species: speciesEl?.value?.trim() || '',
     background: backgroundEl?.value?.trim() || '',
     alignment: alignmentEl?.value?.trim() || ''
@@ -140,13 +145,13 @@ function getData() {
 function renderClassFeatures() {
   if (!pvFeatWrap || !pvFeatList) return;
   pvFeatList.innerHTML = '';
-  const cls = (clsEl?.value || '').trim();
-  const all = window.DND_OPTIONS?.classFeaturesLvl1 || {};
-  const feats = all[cls] || [];
-  if (!cls || feats.length === 0) {
-    pvFeatWrap.hidden = true;
-    return;
-  }
+
+  const code = (clsEl?.value || '').trim();
+  const cls = findClassByCode(code);
+  const feats = (cls?.featuresLvl1 || []);
+
+  if (!code || feats.length === 0) { pvFeatWrap.hidden = true; return; }
+
   const frag = document.createDocumentFragment();
   feats.forEach(f => {
     const li = document.createElement('li');
@@ -162,15 +167,29 @@ function renderClassFeatures() {
 function updatePreview() {
   const data = getData();
   pvName.textContent = data.name || '—';
-  pvClass.textContent = `Class: ${data.class || '—'}`;
+  pvClass.textContent = `Class: ${data.className || '—'}`;
   pvSpecies.textContent = `Species: ${data.species || '—'}`;
   pvBackground.textContent = `Background: ${data.background || '—'}`;
   pvAlignment.textContent = `Alignment: ${data.alignment || '—'}`;
-  const anyFilled = data.name || data.class || data.species || data.background || data.alignment;
+  const anyFilled = data.name || data.classCode || data.species || data.background || data.alignment;
   pv.hidden = !anyFilled;
 }
 
-// 입력 즉시 반영 + 특성 렌더링
+// ===== Init (ensure data loaded) =====
+(function ensureOptionsAndInit(){
+  if (window.DND_OPTIONS) {
+    populateAllOptions(); updatePreview(); renderClassFeatures();
+  } else {
+    const s = document.createElement('script');
+    s.src = 'assets/js/options.ko.global.js';
+    s.async = false;
+    s.onload = () => { populateAllOptions(); updatePreview(); renderClassFeatures(); };
+    s.onerror = () => console.warn('[DND] 옵션 스크립트를 불러오지 못했습니다.');
+    document.head.appendChild(s);
+  }
+})();
+
+// ===== Events =====
 [nameEl, clsEl, speciesEl, backgroundEl, alignmentEl].forEach(el => {
   el?.addEventListener('input', () => {
     updatePreview();
@@ -185,10 +204,9 @@ function updatePreview() {
     if (el === clsEl) renderClassFeatures();
   });
 });
-
 document.addEventListener('DOMContentLoaded', () => { updatePreview(); renderClassFeatures(); });
 
-// ===== Submit/Reset =====
+// ===== Submit/Reset (폼 제출은 페이지 전환 없이 로그만 남김) =====
 form?.addEventListener('submit', (e) => {
   e.preventDefault();
   const ok = (
@@ -198,8 +216,7 @@ form?.addEventListener('submit', (e) => {
     validateRequired(backgroundEl, '배경') &
     validateRequired(alignmentEl, '성향')
   );
-  updatePreview();
-  renderClassFeatures();
+  updatePreview(); renderClassFeatures();
   if (!ok) {
     const firstInvalid = [nameEl, clsEl, speciesEl, backgroundEl, alignmentEl].find(el => el.getAttribute('aria-invalid') === 'true');
     if (firstInvalid) firstInvalid.focus();
@@ -207,19 +224,9 @@ form?.addEventListener('submit', (e) => {
   }
   console.log('[캐릭터]', JSON.stringify(getData()));
 });
-
 btnReset?.addEventListener('click', () => {
   form.reset();
   [nameEl, clsEl, speciesEl, backgroundEl, alignmentEl].forEach(el => setError(el, ''));
-  updatePreview();
-  renderClassFeatures();
+  updatePreview(); renderClassFeatures();
   nameEl.focus();
 });
-// /* === Features list (preview) === */
-// .subheading { margin: 16px 0 6px; font-weight: 800; font-size: 1.02rem; }
-// .feature-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 12px; }
-// .feature-item { border: 1px solid color-mix(in oklab, var(--text) 15%, transparent); border-radius: 12px; padding: 10px 12px; background: color-mix(in oklab, var(--text) 6%, transparent); }
-// :root[data-theme="dark"] .feature-item { border-color: rgba(255,255,255,.12); background: color-mix(in oklab, var(--text) 8%, transparent); }
-// .feat-title { font-weight: 700; }
-// .feat-desc { color: var(--muted); font-size: .95rem; margin-top: 4px; } 
-
